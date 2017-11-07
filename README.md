@@ -1,2 +1,2 @@
 # csv-crud-laravel
-This​ ​ clients manage app using csv as dta storage
+Clients management application using csv as data storage 
