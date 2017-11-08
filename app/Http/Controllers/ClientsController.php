@@ -2,40 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Client;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
-use League\Csv\Writer;
-use League\Csv\Reader;
-use League\Csv\Statement;
-use League\Csv\CannotInsertRecord;
-use League\Csv\Exception;
 
 class ClientsController extends Controller
 {
-    /**
-     * Csv filename 
-     *
-     * @param const FILENAME contains csv filename 
-     */
-    const FILENAME = "clients.csv";
-
-    /**
-     * Storage path location 
-     *  
-     * @param string $storagePath
-     */
-    protected $soragePath;
-
-    /**
-     * Constructor of ClientsController
-     * 
-     * @return void
-     */
-    public function __construct(){
-        $this->storagePath = storage_path('app').'/'.self::FILENAME;
-    }
-
+    
     /**
      * Display a listing of the clients.
      *
@@ -47,11 +20,8 @@ class ClientsController extends Controller
         
         $limit = 2; // get number of records
         
-        $csv = Reader::createFromPath($this->storagePath, 'r');
-        $csv->setHeaderOffset(0); //set the CSV header offset to 0
-        
-        // Pagination
-        $count = count($csv); // return total number of records
+        // Pagination        
+        $count = Client::getTotal();
         $page = $request->input('page') ? $request->input('page') : 1;
 
         $paginator = new Paginator([], $count, $limit, $page, [
@@ -62,16 +32,7 @@ class ClientsController extends Controller
         // Selecting records according to page number
         $offset = ($page-1)*$limit; // get records start from        
         
-        $stmt = (new Statement())
-            ->offset($offset)
-            ->limit($limit);
-        $result = $stmt->process($csv);        
-        
-        $clients = [];
-        foreach ($result->getRecords() as $index => $record) {
-            $record['offset'] = $index;
-            $clients[] = (object) $record;
-        }
+        $clients = Client::getRecords($offset, $limit);
         
         return view('clients.list', ['clients' => $clients, 'paginator' => $paginator]);
     }
@@ -105,7 +66,7 @@ class ClientsController extends Controller
             'contactMode' => 'bail|required',
         ]);
 
-        $client = [
+        $data = [
             'name' => $request->input('name'),
             'gender' => $request->input('gender'),
             'phone' => $request->input('phone'),
@@ -116,29 +77,11 @@ class ClientsController extends Controller
             'education' => $request->input('education'),
             'contactMode' => $request->input('contactMode'),
         ];
+        Client::create($data);
         
-        try {
-            // check whether file exist or not
-            if (File::exists($this->storagePath)) {
-                // File exist. So we just need to insert new $client
-                $writer = Writer::createFromPath($this->storagePath, 'a');
-                $writer->insertOne($client);
-            } else {
-                // File not exist. so this is the first insertion. 
-                // We need to insert header too. Header goes to the offset 0
-                $clients = [
-                    array_keys($client), // for csv header
-                    $client
-                ];
-                $writer = Writer::createFromPath($this->storagePath, 'w+');
-                $writer->insertAll($clients);
-            }
-        } catch (CannotInsertRecord $e){
-            // log which client insertion failed
-            echo $e->getName();
-            echo $e->getData();
-        }
-
+        
+        // Client::create($request->all());
+    
         return redirect('clients');
     }
 
@@ -151,21 +94,13 @@ class ClientsController extends Controller
      */
     public function show($id)
     {
-        $reader = Reader::createFromPath($this->storagePath, 'r');
-        $reader->setHeaderOffset(0); // Set header offset always to 0
+        $client = Client::getOne($id);
 
-        // $id is the nth offset of the record in csv file
-        $stmt = (new Statement())
-            ->offset($id-1) // need to decrement 1 since we set header offset 0
-            ->limit(1);
-    
-        // access the 0th record from the recordset (indexing starts at 0)
-        $client = $stmt->process($reader)->fetchOne(0);
-        if (empty($client)) {
+        if (!$client) {
             throw new \Exception('Client record not found.');
         }
-        
-        return view('clients.show', ['client' => (object)$client]);
+        // print_r($client->toArray());exit();
+        return view('clients.show', ['client' => $client]);
     }
 
     /**
