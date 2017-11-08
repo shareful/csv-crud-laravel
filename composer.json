@@ -1,7 +1,7 @@
 {
-    "name": "laravel/laravel",
-    "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
+    "name": "shareful/clients",
+    "description": "Manage clients without any database. Use csv instead.",
+    "keywords": ["application", "clients", "csv", "laravel",],
     "license": "MIT",
     "type": "project",
     "require": {
