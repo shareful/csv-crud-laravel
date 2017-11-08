@@ -3,12 +3,22 @@ About Application
 
 This is a sample application on how we can make a Laravel crud application without using any database. Use Csv instead for storing data. In this application I have created a client list for example.
 
+Features
+-------
+
+* Create Client
+* Front end and Back end validation 
+* Client List
+* Pagination
+* Client Detail
+* Active top menu according to uri
+
 System Requirements
 -------
 
 You need PHP >= 7.0.10 and the mbstring extension to use Csv but the latest stable version of PHP is recommended.
 
-Third Party libraries Used
+Third Party Libraries Used
 -------
 
 * Larevel 5.5 as framework
