@@ -88,12 +88,12 @@ class ClientsController extends Controller
         ]);
 
         // Store data        
-        if(!Client::create($request->all())){
+        $instance = Client::create($request->all());
+        if(!$instance){
             throw new \Exception('Client can not created.');
         }
-
         // keep this event log
-        $this->clientLog->info('ClientLog', ['Client is created successfully']);
+        $this->clientLog->info('ClientLog', ['Client '.$instance->name.' is created successfully']);
 
         return redirect('clients');
     }

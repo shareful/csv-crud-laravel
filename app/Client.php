@@ -108,13 +108,16 @@ class Client extends Model
      */
     public static function getTotal()
     {
-    	$reader = Reader::createFromPath(self::getStoragePath(), 'r');
-        $reader->setHeaderOffset(0); //set the CSV header offset to 0
-        
-        $total =  count($reader); // return total number of records
-        // unset to close the file resource
-        unset($reader);
-
+        $total = 0;
+        if (File::exists(self::getStoragePath())) {
+            $reader = Reader::createFromPath(self::getStoragePath(), 'r');
+            $reader->setHeaderOffset(0); //set the CSV header offset to 0
+            
+            $total =  count($reader); // return total number of records
+            // unset to close the file resource
+            unset($reader);
+        }
+    
         return $total;
     }
 
@@ -127,33 +130,34 @@ class Client extends Model
      */
     public static function getRecords($offset=0, $limit=null)
     {
-    	$reader = Reader::createFromPath(self::getStoragePath(), 'r');
-        $reader->setHeaderOffset(0); //set the CSV header offset to 0
-
         $clients = [];
-    	if ($limit > 0) {
-    		$stmt = (new Statement())
-            ->offset($offset)
-            ->limit($limit);
-        	
-        	$result = $stmt->process($reader);                
+        if (File::exists(self::getStoragePath())) {
+            $reader = Reader::createFromPath(self::getStoragePath(), 'r');
+            $reader->setHeaderOffset(0); //set the CSV header offset to 0
 
-        	foreach ($result->getRecords() as $index => $record) {
-	            $instance = new static($record);
-                $instance->setAttribute('offset', $index);
-	            $clients[] = $instance;
-	        }
-    	} else {
-    		foreach ($reader->getRecords() as $index => $record) {
-	            $instance = new static($record);
-                $instance->setAttribute('offset', $index);
-	            $clients[] = $instance;
-	        } 		
-    	}
+        	if ($limit > 0) {
+        		$stmt = (new Statement())
+                ->offset($offset)
+                ->limit($limit);
+            	
+            	$result = $stmt->process($reader);                
 
-    	// unset to close the file resource
-        unset($reader);
+            	foreach ($result->getRecords() as $index => $record) {
+    	            $instance = new static($record);
+                    $instance->setAttribute('offset', $index);
+    	            $clients[] = $instance;
+    	        }
+        	} else {
+        		foreach ($reader->getRecords() as $index => $record) {
+    	            $instance = new static($record);
+                    $instance->setAttribute('offset', $index);
+    	            $clients[] = $instance;
+    	        } 		
+        	}
 
+        	// unset to close the file resource
+            unset($reader);
+        }
     	return $clients;
     }
 
@@ -165,26 +169,30 @@ class Client extends Model
      */
     public static function getOne($offset)
     {
-    	$reader = Reader::createFromPath(self::getStoragePath(), 'r');
-        $reader->setHeaderOffset(0); // Set header offset always to 0
+        if (File::exists(self::getStoragePath())) {
+        	$reader = Reader::createFromPath(self::getStoragePath(), 'r');
+            $reader->setHeaderOffset(0); // Set header offset always to 0
+            
+            // $offset is the nth offset of the record in csv file
+            $stmt = (new Statement())
+                ->offset($offset-1) // need to decrement 1 since we set header offset 0
+                ->limit(1);
         
-        // $offset is the nth offset of the record in csv file
-        $stmt = (new Statement())
-            ->offset($offset-1) // need to decrement 1 since we set header offset 0
-            ->limit(1);
-    
-        // access the 0th record from the recordset (indexing starts at 0)
-        $record = $stmt->process($reader)->fetchOne(0);
-        
-        // unset to close the file resource
-        unset($reader);
+            // access the 0th record from the recordset (indexing starts at 0)
+            $record = $stmt->process($reader)->fetchOne(0);
+            
+            // unset to close the file resource
+            unset($reader);
 
-        if (!empty($record)) {
-        	$instance = new static($record);
-            $instance->setAttribute('offset', $offset);
-        	return $instance;
+            if (!empty($record)) {
+            	$instance = new static($record);
+                $instance->setAttribute('offset', $offset);
+            	return $instance;
+            } else {
+            	return false;
+            }
         } else {
-        	return false;
+            return false;
         }
     }
 }
