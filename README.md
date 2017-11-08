@@ -1,6 +1,8 @@
 About Application
 =====
 
+<a href="https://codeclimate.com/github/shareful/csv-crud-laravel/maintainability"><img src="https://api.codeclimate.com/v1/badges/892e9b06dde128d745c6/maintainability" /></a>
+
 This is a sample application on how we can make a Laravel crud application without using any database. Use Csv instead for storing data. In this application I have created a client list for example.
 
 Features Completed
