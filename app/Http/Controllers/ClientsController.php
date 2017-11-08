@@ -5,9 +5,29 @@ namespace App\Http\Controllers;
 use App\Client;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 class ClientsController extends Controller
 {
+
+    /**
+     * Clients Event Logger 
+     *
+     * @var \Monolog\Logger
+     */
+    protected $clientLog;
+
+    /**
+     * Constructor of ClientsController
+     * Initialize Logger
+     *
+     * @return void
+     */
+    public function __construct(){
+        $this->clientLog = new Logger('client');
+        $this->clientLog->pushHandler(new StreamHandler(storage_path('logs/client.log')), Logger::INFO);
+    }
     
     /**
      * Display a listing of the clients.
@@ -55,6 +75,7 @@ class ClientsController extends Controller
      */
     public function store(Request $request)
     {
+        // Validation
         $this->validate($request,[
             'name' => 'bail|required',
             'gender' => 'bail|required',
@@ -66,22 +87,14 @@ class ClientsController extends Controller
             'contactMode' => 'bail|required',
         ]);
 
-        $data = [
-            'name' => $request->input('name'),
-            'gender' => $request->input('gender'),
-            'phone' => $request->input('phone'),
-            'email' => $request->input('email'),
-            'address' => $request->input('address'),
-            'nationality' => $request->input('nationality'),
-            'birthDate' => $request->input('birthDate'),
-            'education' => $request->input('education'),
-            'contactMode' => $request->input('contactMode'),
-        ];
-        Client::create($data);
-        
-        
-        // Client::create($request->all());
-    
+        // Store data        
+        if(!Client::create($request->all())){
+            throw new \Exception('Client can not created.');
+        }
+
+        // keep this event log
+        $this->clientLog->info('ClientLog', ['Client is created successfully']);
+
         return redirect('clients');
     }
 

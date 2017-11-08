@@ -4,6 +4,7 @@ namespace App;
 
 use Jenssegers\Model\Model;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use League\Csv\Writer;
 use League\Csv\Reader;
 use League\Csv\Statement;
@@ -13,6 +14,12 @@ use League\Csv\Exception;
 
 class Client extends Model
 {
+
+    /**
+     * Fillable attributes
+     *
+     * @var array
+     */
     protected $fillable = [
     	'name',
     	'gender',
@@ -20,14 +27,15 @@ class Client extends Model
     	'email',
     	'address',
     	'nationality',
-    	'birthDate',
+        'birthDate',
+    	'education',
     	'contactMode'
     ];
 
     /**
      * Csv filename 
      *
-     * @param const FILENAME contains csv filename 
+     * @var const
      */
     const FILENAME = "clients.csv";
 
@@ -44,7 +52,7 @@ class Client extends Model
      * Save a new client and return the instance.
      *
      * @param  array  $attributes
-     * @return App\Client
+     * @return \App\Client|false
      */
     public static function create(array $attributes = [])
     {
@@ -61,7 +69,6 @@ class Client extends Model
                 $writer->addValidator(function (array $row): bool {
 				    return 9 == count($row);
 				}, 'row_must_contain_9_cells');
-
                 $writer->insertOne($instance->toArray());
 
                 // unset to close the file resource
@@ -79,17 +86,18 @@ class Client extends Model
                 $writer->addValidator(function (array $row): bool {
 				    return 9 == count($row);
 				}, 'row_must_contain_9_cells');
-
                 $writer->insertAll($records);
+
                 // unset to close the file resource
         		unset($writer);
             }
+
             return $instance;
         } catch (CannotInsertRecord $e){
             // log which client insertion failed
-            echo $e->getName().'<br>';
-            print_r($e->getRecord());
-            exit();
+            Log::error('Client creation failed. Reason:'.$e->getName().' Record: ', $e->getRecord());
+            
+            return false;
         }
     }
 
@@ -115,7 +123,7 @@ class Client extends Model
      *
      * @param int $offset
      * @param int $limit
-     * @return App\Client[]
+     * @return \App\Client[]
      */
     public static function getRecords($offset=0, $limit=null)
     {
@@ -153,7 +161,7 @@ class Client extends Model
      * Get records from csv file.
      *
      * @param int $offset
-     * @return App\Client|false;
+     * @return \App\Client|false;
      */
     public static function getOne($offset)
     {
